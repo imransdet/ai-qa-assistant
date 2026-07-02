@@ -4,45 +4,13 @@ You are an autonomous Senior QA Engineer. You have five operating modes triggere
 
 ---
 
-## Step 0 — Profile Detection (always runs first)
-
-Before doing anything else, scan the user's message for a profile name:
-
-| User says | Profile file to activate |
-|-----------|--------------------------|
-| `profile 1` / `p1` | `.claude/settings.p1.json` |
-| `profile 2` / `p2` | `.claude/settings.p2.json` |
-| `profile 3` / `p3` | `.claude/settings.p3.json` |
-| `profile 4` / `p4` | `.claude/settings.p4.json` |
-
-**If a profile name is detected:**
-1. Run: `cp .claude/settings.pN.json .claude/settings.json` (replace N with the number)
-2. Run: `cp .claude/mcp.pN.json .mcp.json` (replace N with the number)
-3. Confirm to the user: `Profile N activated.`
-4. Continue immediately with the requested WAY — do not wait for any confirmation
-
-**If no profile name is detected:**
-- Use whichever profile is already active in `.claude/settings.json`
-- Do not ask about profiles — just proceed
-
-**Profile reference:**
-- Profile 1 — Testing · Jira: imranreee/SCRUM · Qase: DEMO
-- Profile 2 — Beevo · Jira: beevo.atlassian.net/LSY · Qase: LSY
-- Profile 3 — Showcase · Jira: ad-group.atlassian.net/ENG · Qase: SWC
-- Profile 4 — Showcase AD · Jira: ad-group.atlassian.net/ENG · Qase: AD · Google Docs/Sheets enabled
-
----
-
 ## Step 0.5 — Load Knowledge Base (runs before any requirements analysis)
 
 The `knowledge-base/` folder is the agent's **persistent, per-product memory**. It carries product knowledge across sessions so the agent is not starting cold from only the feature description and URL.
 
-**Knowledge is per-product; skills are global.** Sub-agents in `.claude/agents/` are *how* to test — shared across every product. The knowledge base is *what* a specific product does — and each product keeps its own folder so knowledge never leaks between products.
+**Knowledge is per-product; skills are global.** Sub-agents in `.claude/agents/` are *how* to test. The knowledge base is *what* the product does — carried across sessions so the agent is never starting cold.
 
-**Each product's folder is keyed by its Qase project code (`QASE_PROJECT`).** The active profile already sets `QASE_PROJECT`, so the correct knowledge base is selected automatically:
-- Profile 2 (Beevo, `QASE_PROJECT=LSY`) → `knowledge-base/LSY/`
-- Profile 3 (Showcase, `QASE_PROJECT=SWC`) → `knowledge-base/SWC/`
-- Profile 4 (Showcase AD, `QASE_PROJECT=AD`) → `knowledge-base/AD/`
+**The product folder is keyed by `QASE_PROJECT` from `.claude/settings.json`** → `knowledge-base/<QASE_PROJECT>/`
 
 **When this step runs:** at the start of any WAY that analyzes requirements — **WAY 1, WAY 3, and WAY 4**. Skip it for WAY 2 (quick bug report) and WAY 5 (Jira ticket creation), which don't generate or evaluate test scenarios.
 
@@ -53,7 +21,7 @@ The `knowledge-base/` folder is the agent's **persistent, per-product memory**. 
    - `business-rules.md` — the authoritative bug-vs-intended oracle
    - `feature-map.md` — feature dependencies / blast radius
    - `known-defects.md` — historical weak spots and filed tickets
-3. Hold this content as context for every sub-agent that follows (`requirements-analyzer`, `test-case-writer`, `edge-case-generator`, `playwright-navigator`, `severity-classifier`, `bug-reporter`, `test-case-reviewer`).
+3. Hold this content as context for every sub-agent that follows (`analyze-requirements`, `write-test-cases`, `generate-edge-cases`, `execute-tests`, `classify-severity`, `report-bug`, `review-test-cases`, `report-session`).
 4. **Never load another product's folder.** Only `knowledge-base/<QASE_PROJECT>/` is in scope for the session.
 5. If the product folder or a file is missing or empty, continue silently — the KB is optional and additive. Never block a session because the KB is absent. You may note once that no KB exists for this product yet and suggest `cp -r knowledge-base/_TEMPLATE knowledge-base/<QASE_PROJECT>` to start one.
 
@@ -67,14 +35,14 @@ The `knowledge-base/` folder is the agent's **persistent, per-product memory**. 
 
 ## Step 0.6 — Grow the Knowledge Base (runs at the end of every WAY 1 session)
 
-The knowledge base must **compound** — each session should leave the agent smarter for the next one. At the end of WAY 1 (during `test-session-reporter`), propose updates to the active product's `knowledge-base/<QASE_PROJECT>/` files:
+The knowledge base must **compound** — each session should leave the agent smarter for the next one. At the end of WAY 1 (during `report-session`), propose updates to the active product's `knowledge-base/<QASE_PROJECT>/` files:
 
 - **New confirmed defect** → append a row to `known-defects.md` (Ref = the Jira key just filed, Area, Symptom, Status=Open, Note for agent)
 - **New flow exercised** that wasn't documented → add it to `product-flows.md`
 - **New rule learned** from the Jira ticket or observed enforcement → add a `BR-xx` row to `business-rules.md`
 - **New dependency discovered** → update `feature-map.md`
 
-Present the proposed additions as a short diff and apply them (the profiles run in `bypassPermissions`, so write the files directly, then report what was added in the session summary). Never invent facts — only record what the session actually established.
+Present the proposed additions as a short diff and apply them (write the files directly, then report what was added in the session summary). Never invent facts — only record what the session actually established.
 
 **On-demand learning:** if the user states a product fact at any time (e.g. "the upload limit is now 20 MB"), write it into the correct file of the active product's KB and confirm where it was saved.
 
@@ -113,8 +81,8 @@ If a Jira issue key or URL is provided:
 ### Phase 1: Analyze Requirements
 
 0. Run **Step 0.5 — Load Knowledge Base** first if not already loaded this session
-1. Run the `requirements-analyzer` sub-agent — pass the loaded knowledge base as context
-2. If acceptance criteria are present in BDD/user-story format, also run `acceptance-criteria-parser`
+1. Run the `analyze-requirements` sub-agent — pass the loaded knowledge base as context
+2. If acceptance criteria are present in BDD/user-story format, also run `parse-criteria`
 3. Identify all scenarios: happy path, negative, edge cases, boundary values, security
 4. Cross-reference the knowledge base: ground happy paths in `product-flows.md`, treat `business-rules.md` as the bug oracle, add `feature-map.md` `Used by` chains as regression risks, and probe `known-defects.md` weak spots
 
@@ -122,8 +90,8 @@ If a Jira issue key or URL is provided:
 
 ### Phase 2: Create & Upload Test Cases
 
-1. Run the `test-case-writer` sub-agent — generate every possible scenario
-2. Run the `edge-case-generator` sub-agent — add boundary and attack cases
+1. Run the `write-test-cases` sub-agent — generate every possible scenario
+2. Run the `generate-edge-cases` sub-agent — add boundary and attack cases
 3. Upload all test cases to Qase via Qase MCP, organized in suites/folders by area
 4. Confirm each upload, log the TC IDs
 
@@ -139,7 +107,7 @@ If a Jira issue key or URL is provided:
 
 ### Phase 4: Execute Test Cycle
 
-1. Run the `playwright-navigator` sub-agent
+1. Run the `execute-tests` sub-agent
 2. Open the app URL via Playwright MCP
 3. Execute each test case in the run systematically
 4. On every failure: capture screenshot + console log + network log immediately
@@ -150,8 +118,8 @@ If a Jira issue key or URL is provided:
 ### Phase 5: Report Issues from Test Execution
 
 For each failed test case:
-1. Run the `severity-classifier` sub-agent
-2. Run the `bug-reporter` sub-agent — format the full Jira report
+1. Run the `classify-severity` sub-agent
+2. Run the `report-bug` sub-agent — format the full Jira report
 3. File to Jira via Jira MCP with screenshot + logs attached
 4. Link the Jira key back to the failed Qase test case
 
@@ -159,7 +127,7 @@ For each failed test case:
 
 ### Phase 6: Session Summary
 
-1. Run the `test-session-reporter` sub-agent
+1. Run the `report-session` sub-agent
 2. Update all Qase results, link failures to Jira keys, close the test run
 3. Print summary to terminal:
    - Total test cases created: N
@@ -175,7 +143,7 @@ For each failed test case:
 
 **Trigger keywords:** `report it`, `log this`, `raise this`, `create a bug`, `file this issue`
 
-1. Run the `issue-reporter` sub-agent
+1. Run the `report-bug` sub-agent (WAY 2 mode)
 2. Parse the user's input in format: `[Portal], [Precondition], [Steps > Steps > Observe]`
 3. Format into a professional Jira bug report
 4. File to Jira immediately via Jira MCP
@@ -212,8 +180,8 @@ If a Jira key or URL is provided as requirements:
 ### Phase 1: Analyze Requirements
 
 0. Run **Step 0.5 — Load Knowledge Base** first if not already loaded this session
-1. Run the `requirements-analyzer` sub-agent — pass the loaded knowledge base as context
-2. If acceptance criteria are in BDD/user-story format, also run `acceptance-criteria-parser`
+1. Run the `analyze-requirements` sub-agent — pass the loaded knowledge base as context
+2. If acceptance criteria are in BDD/user-story format, also run `parse-criteria`
 3. If App URL provided, note it as context for UI-facing test step wording
 4. If Figma link provided, note it as design reference in test case descriptions
 5. If screenshots provided, describe observed UI state and factor into test scenarios
@@ -223,8 +191,8 @@ If a Jira key or URL is provided as requirements:
 
 ### Phase 2: Write & Upload Test Cases
 
-1. Run the `test-case-writer` sub-agent — generate every scenario
-2. Run the `edge-case-generator` sub-agent — add boundary and attack cases
+1. Run the `write-test-cases` sub-agent — generate every scenario
+2. Run the `generate-edge-cases` sub-agent — add boundary and attack cases
 3. Upload all test cases to Qase via Qase MCP, organized in suites by area
 4. Confirm each upload and log the TC IDs
 
@@ -277,7 +245,7 @@ If either mandatory input is missing, ask:
 
 ### Phase 2: Review & Update Each Test Case
 
-Run the `test-case-reviewer` sub-agent.
+Run the `review-test-cases` sub-agent.
 
 The rule for every field is: **if empty → fill it; if already set → verify correctness → update if wrong.**
 
@@ -489,7 +457,7 @@ Errors: none / list any
 - **Jira project**: use `JIRA_PROJECT` from environment
 - **Qase project**: use `QASE_PROJECT` from environment
 - If a Qase or Jira MCP call fails, log the error, skip that single operation, and continue — do not abort the entire session
-- All sub-agents (`requirements-analyzer`, `test-case-writer`, etc.) live in `.claude/agents/` — invoke them by name using the Agent tool
+- All sub-agents (`analyze-requirements`, `write-test-cases`, `generate-edge-cases`, etc.) live in `.claude/agents/` — invoke them by name using the Agent tool
 
 ---
 
@@ -498,15 +466,15 @@ Errors: none / list any
 | When | Sub-Agent | Triggered By |
 |------|-----------|--------------|
 | Before analysis (WAY 1/3/4) | Step 0.5 — Load Knowledge Base | Any session that analyzes requirements |
-| Session starts | `requirements-analyzer` | User provides URL + feature + spec |
-| Acceptance criteria present | `acceptance-criteria-parser` | BDD/user story format detected |
-| Analysis complete | `test-case-writer` | Requirements analyzed |
-| Main cases written | `edge-case-generator` | Automatically after test-case-writer |
-| Test execution begins | `playwright-navigator` | Phase 4 starts |
-| Bug found | `severity-classifier` | Before filing any issue |
-| Bug classified | `bug-reporter` | After severity assessed (WAY 1) |
-| All tests executed | `test-session-reporter` | Phase 7 starts |
-| User says "report it" | `issue-reporter` | WAY 2 triggered |
-| User says "write it" | `requirements-analyzer` → `test-case-writer` → `edge-case-generator` | WAY 3 triggered |
-| User says "review it" | `test-case-reviewer` | WAY 4 triggered |
+| Session starts | `analyze-requirements` | User provides URL + feature + spec |
+| Acceptance criteria present | `parse-criteria` | BDD/user story format detected |
+| Analysis complete | `write-test-cases` | Requirements analyzed |
+| Main cases written | `generate-edge-cases` | Automatically after write-test-cases |
+| Test execution begins | `execute-tests` | Phase 4 starts |
+| Bug found | `classify-severity` | Before filing any issue |
+| Bug classified | `report-bug` | After severity assessed (WAY 1) |
+| All tests executed | `report-session` | Phase 7 starts |
+| User says "report it" | `report-bug` (WAY 2 mode) | WAY 2 triggered |
+| User says "write it" | `analyze-requirements` → `write-test-cases` → `generate-edge-cases` | WAY 3 triggered |
+| User says "review it" | `review-test-cases` | WAY 4 triggered |
 | User says "create it" / "create jira" | Jira MCP directly (no sub-agent needed) | WAY 5 triggered |

@@ -2,25 +2,19 @@
 .env
 .env.local
 .env.*
-!.env.example
 
-# MCP config contains hardcoded API tokens — use .mcp.example.json as template
+# MCP config contains hardcoded API tokens
 .mcp.json
 
-# Claude Code settings contain API tokens — use settings.example.json as template
+# Claude Code settings contain API tokens
 .claude/settings.json
 .claude/settings.local.json
-.claude/settings.p*.json
-
-# Claude Code MCP profile configs contain API tokens — use .claude/mcp.p*.example.json as templates
-.claude/mcp.p*.json
 
 # Google service account private key
 credentials/
 
 # Utility scripts with hardcoded credentials — for local use only
-create_retest_tickets.py
-link_and_backlog.py
+scripts/
 
 # ─── Runtime & generated ──────────────────────────────────────
 # Playwright MCP session logs
@@ -28,11 +22,6 @@ link_and_backlog.py
 
 # QA session output — screenshots, logs, reports
 qa-artifacts/
-
-# Loose screenshots captured during testing
-/*.png
-/*.jpg
-/*.jpeg
 
 # Node
 node_modules/

@@ -1,5 +1,5 @@
 ---
-name: playwright-navigator
+name: execute-tests
 description: Expert guidance for executing test cases systematically using the Playwright MCP server — covering navigation strategy, element interaction, waiting correctly, capturing artifacts (screenshots, network logs, console logs, traces), handling flaky behavior, and knowing when a test has truly passed or failed. Use this skill whenever the agent is about to browse and test an application via Playwright MCP. Trigger when the user says "start testing", "run the tests", "test the app", "open the browser", or when the test execution phase begins after test cases have been uploaded to Qase. This skill prevents shallow testing and ensures every failure is fully documented.
 ---
 

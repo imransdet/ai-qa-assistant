@@ -1,5 +1,5 @@
 ---
-name: test-session-reporter
+name: report-session
 description: Generates a complete, professional test session summary report, updates all test results in Qase (marking each case as passed/failed/blocked), links failed cases to their Jira issue IDs, closes the test run, and produces a human-readable session report for stakeholders. Use this skill at the END of every QA session — after all test cases have been executed and all bugs have been filed. Trigger when the user says "wrap up the session", "finish testing", "generate the report", "update Qase results", "close the test run", "summarize findings", or "session done". This skill is what turns raw testing into a documented, traceable QA record.
 ---
 

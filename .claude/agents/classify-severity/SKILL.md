@@ -1,6 +1,6 @@
 ---
-name: severity-classifier
-description: Classifies the severity and priority of every bug found during testing using a consistent, objective rubric — preventing priority inflation (everything is "Critical") and priority deflation (real bugs marked "Minor"). Use this skill every time a bug is found and before bug-reporter files it to Jira. Also trigger when the user asks "how bad is this bug", "what priority should this be", "is this a blocker", "rate this defect", or "classify this issue". Consistent severity classification keeps the bug queue credible so developers trust and act on it.
+name: classify-severity
+description: Classifies the severity and priority of every bug found during testing using a consistent, objective rubric — preventing priority inflation (everything is "Critical") and priority deflation (real bugs marked "Minor"). Use this skill every time a bug is found and before report-bug files it to Jira. Also trigger when the user asks "how bad is this bug", "what priority should this be", "is this a blocker", "rate this defect", or "classify this issue". Consistent severity classification keeps the bug queue credible so developers trust and act on it.
 ---
 
 # Severity Classifier

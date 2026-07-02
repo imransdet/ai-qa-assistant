@@ -1,5 +1,5 @@
 ---
-name: test-case-reviewer
+name: review-test-cases
 description: Reviews and improves existing Qase test cases against requirements. Checks Title, Severity, Priority, Type (Regression), Layer (E2E), Behavior (Positive/Negative), Precondition, Steps, and grammar/spelling. Creates new test cases for any missing scenarios. Use this skill when the user says "review it" and provides a Qase suite link and requirements source (app URL or Jira ticket).
 ---
 

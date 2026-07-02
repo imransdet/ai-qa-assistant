@@ -1,5 +1,5 @@
 ---
-name: exploratory-tester
+name: explore-app
 description: Performs structured exploratory testing using professional QA heuristics, attack patterns, and tour-based exploration — going beyond scripted test cases to find bugs that only emerge through creative, experience-driven testing. Use this skill after scripted test cases have been executed, or when the user says "explore the app", "do exploratory testing", "test beyond the test cases", "go find bugs", "what else should I test", or "free-form testing". Also trigger when a feature has vague requirements that don't lend themselves to scripted cases, or when the user wants a second pass after scripted tests. This skill finds the bugs users actually hit.
 ---
 

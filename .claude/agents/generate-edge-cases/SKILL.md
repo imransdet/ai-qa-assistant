@@ -1,6 +1,6 @@
 ---
-name: edge-case-generator
-description: Generates exhaustive edge cases, boundary value tests, negative tests, and security-focused attack scenarios that standard test case writing misses. Use this skill after test-case-writer has produced the main test cases, or whenever the user says "what edge cases am I missing", "add edge cases", "security test cases", "boundary testing", "negative tests", or "what could go wrong". Also trigger automatically when testing features involving: user input fields, file uploads, numeric inputs, date/time fields, authentication, payment, or any data that crosses a trust boundary. This skill finds the bugs that ship to production.
+name: generate-edge-cases
+description: Generates exhaustive edge cases, boundary value tests, negative tests, and security-focused attack scenarios that standard test case writing misses. Use this skill after write-test-cases has produced the main test cases, or whenever the user says "what edge cases am I missing", "add edge cases", "security test cases", "boundary testing", "negative tests", or "what could go wrong". Also trigger automatically when testing features involving: user input fields, file uploads, numeric inputs, date/time fields, authentication, payment, or any data that crosses a trust boundary. This skill finds the bugs that ship to production.
 ---
 
 # Edge Case Generator

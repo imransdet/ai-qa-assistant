@@ -1,6 +1,6 @@
 ---
-name: acceptance-criteria-parser
-description: Parses acceptance criteria written in any format — BDD (Given/When/Then), user stories, bullet lists, numbered lists, or plain English — and converts them into precise, machine-actionable QA test conditions with explicit pass/fail verdicts. Use this skill whenever the user provides acceptance criteria, a "Definition of Done", BDD scenarios, or any list of conditions a feature must satisfy. Also trigger when the user says "parse these criteria", "convert this to test conditions", "what does done look like", or "extract the pass/fail rules". Run this before or alongside test-case-writer to ensure every test case maps to a specific acceptance criterion.
+name: parse-criteria
+description: Parses acceptance criteria written in any format — BDD (Given/When/Then), user stories, bullet lists, numbered lists, or plain English — and converts them into precise, machine-actionable QA test conditions with explicit pass/fail verdicts. Use this skill whenever the user provides acceptance criteria, a "Definition of Done", BDD scenarios, or any list of conditions a feature must satisfy. Also trigger when the user says "parse these criteria", "convert this to test conditions", "what does done look like", or "extract the pass/fail rules". Run this before or alongside write-test-cases to ensure every test case maps to a specific acceptance criterion.
 ---
 
 # Acceptance Criteria Parser

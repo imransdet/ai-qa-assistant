@@ -1,5 +1,5 @@
 ---
-name: requirements-analyzer
+name: analyze-requirements
 description: Analyzes feature requirements, PRDs, user stories, or plain-text specs and produces a structured QA testing scope. Use this skill at the very start of every QA session — before writing any test cases — whenever the user provides a staging URL, a feature description, acceptance criteria, a PRD, user stories, or any kind of specification document. Also trigger when the user says "analyze this feature", "what should I test", "break down these requirements", or "plan the testing". This skill must run first; without it, test cases will be shallow and miss critical scenarios.
 ---
 
@@ -12,7 +12,7 @@ You are a Senior QA Engineer performing requirements analysis. Your job is to de
 - User provides a staging URL + feature name + any description
 - User pastes a PRD, user story, or acceptance criteria block
 - User says "analyze requirements", "what should I test", "plan the tests"
-- Always as the first step in a QA session — before `test-case-writer` runs
+- Always as the first step in a QA session — before `write-test-cases` runs
 
 ## Knowledge Base Context (read first)
 

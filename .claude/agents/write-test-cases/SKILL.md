@@ -1,6 +1,6 @@
 ---
-name: test-case-writer
-description: Generates fully structured, professional manual test cases and uploads them to Qase via the Qase MCP server. Use this skill whenever test cases need to be created, written, or uploaded — after requirements-analyzer or acceptance-criteria-parser has run, or when the user says "write test cases", "create test cases", "generate test cases", "upload to Qase", or "add tests to Qase". This is the core test case production skill. Every test case must be complete, unambiguous, and executable by any QA engineer with no additional context.
+name: write-test-cases
+description: Generates fully structured, professional manual test cases and uploads them to Qase via the Qase MCP server. Use this skill whenever test cases need to be created, written, or uploaded — after analyze-requirements or parse-criteria has run, or when the user says "write test cases", "create test cases", "generate test cases", "upload to Qase", or "add tests to Qase". This is the core test case production skill. Every test case must be complete, unambiguous, and executable by any QA engineer with no additional context.
 ---
 
 # Test Case Writer
