@@ -143,11 +143,12 @@ For each failed test case:
 
 **Trigger keywords:** `report it`, `log this`, `raise this`, `create a bug`, `file this issue`
 
-1. Run the `report-bug` sub-agent (WAY 2 mode)
-2. Parse the user's input in format: `[Portal], [Precondition], [Steps > Steps > Observe]`
-3. Format into a professional Jira bug report
-4. File to Jira immediately via Jira MCP
-5. Print summary: Jira key, title, priority, assignee, portal, steps count, actual result, expected result, Jira link
+Handle inline — do NOT spawn a sub-agent, do NOT fetch any Jira ticket.
+1. Parse the user's input in format: `[Portal], [Precondition], [Steps > Steps > Observe]`
+2. Derive title, expected result, and full description — build the description as **ADF JSON** (see report-bug SKILL.md Description Format); never use Markdown asterisks, they render as literal characters in Jira Cloud
+3. Look up assignee accountId via Jira MCP (`get_jira_current_user` — no params needed)
+4. Call `create_jira_issue` directly — file immediately
+5. Print summary: Jira key, title, priority, assignee, Jira link
 
 ---
 
@@ -474,7 +475,7 @@ Errors: none / list any
 | Bug found | `classify-severity` | Before filing any issue |
 | Bug classified | `report-bug` | After severity assessed (WAY 1) |
 | All tests executed | `report-session` | Phase 7 starts |
-| User says "report it" | `report-bug` (WAY 2 mode) | WAY 2 triggered |
+| User says "report it" | Jira MCP directly — no sub-agent | WAY 2 triggered |
 | User says "write it" | `analyze-requirements` → `write-test-cases` → `generate-edge-cases` | WAY 3 triggered |
 | User says "review it" | `review-test-cases` | WAY 4 triggered |
 | User says "create it" / "create jira" | Jira MCP directly (no sub-agent needed) | WAY 5 triggered |

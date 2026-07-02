@@ -36,6 +36,49 @@ Use the active product's KB only — `knowledge-base/<QASE_PROJECT>/`.
 
 ---
 
+## Severity & Priority Matrix
+
+Run this assessment **before** calling `create_jira_issue` in either mode. Set `priority` in Jira to the value the matrix produces. State the assessed severity in the description as a plain line (e.g. `Severity: High`) so developers see the full picture.
+
+### Step 1 — Assess Severity (system impact)
+
+| Level | Label | Criteria |
+|-------|-------|----------|
+| S1 | **Critical** | App crash · data loss / corruption · security vulnerability · authentication/login broken · payment flow broken |
+| S2 | **High** | Core feature completely non-functional, no workaround · wrong data saved / displayed silently |
+| S3 | **Medium** | Feature partially broken but workaround exists · UI error that blocks one path but not all paths |
+| S4 | **Low** | Cosmetic issue · typo · minor misalignment · non-blocking UX friction |
+
+### Step 2 — Assess Blast Radius (who is affected)
+
+| Label | Criteria |
+|-------|----------|
+| **Wide** | Affects all or most users · happens on core flows (login, signup, main dashboard, checkout, primary actions) |
+| **Narrow** | Affects a small subset of users · admin-only screens · rare edge-case paths |
+
+### Step 3 — Look up Priority
+
+| Severity | Wide Blast Radius | Narrow Blast Radius |
+|----------|-------------------|---------------------|
+| S1 Critical | **Critical** | **High** |
+| S2 High | **High** | **Medium** |
+| S3 Medium | **Medium** | **Low** |
+| S4 Low | **Low** | **Low** |
+
+### Modifiers (apply after looking up the base priority)
+
+- Bump **up one level** if: bug is on a payment / auth / data-integrity path, OR it is a regression in a recently shipped feature
+- Drop **down one level** if: a simple workaround fully mitigates it, OR it only appears under a rare configuration
+- **Never exceed Critical** — if two upward modifiers would push beyond Critical, stay at Critical
+
+### Anti-inflation rules
+
+- Do not use Critical or High unless the criteria are clearly met — over-inflation erodes developer trust in the bug queue
+- Default to **Medium** when severity or blast radius is genuinely uncertain
+- A broken UI that is purely cosmetic is **never** higher than Low priority, regardless of how visible it is
+
+---
+
 ## WAY 2 — Manual Report Procedure
 
 ### Parsing Rules
@@ -52,26 +95,24 @@ Use the active product's KB only — `knowledge-base/<QASE_PROJECT>/`.
 
 ### Filing Steps
 
-1. Call `jira_search_users` with `JIRA_USERNAME` from env — extract `accountId`.
-2. Call `jira_create_issue`:
-   - `project_key`: JIRA_PROJECT from env
-   - `issue_type`: "Bug" — always, never "Task"
+1. Call `list_agile_boards` — find the board for JIRA_PROJECT, extract board `id`.
+2. Call `list_sprints_for_board` with that board id and `state: active` — extract the sprint `id`.
+3. Call `get_jira_current_user` (no params) — extract `accountId` from the response.
+4. Call `create_jira_issue`:
+   - `projectKey`: JIRA_PROJECT from env
+   - `issueType`: "Bug" — always, never "Task"
    - `summary`: derived title
-   - `description`: formatted report (see Description Format below)
-   - `priority`: inferred from impact
-   - `assignee_account_id`: from step 1
+   - `description`: formatted report (see Description Format below) — keep it short and natural, not corporate-formal
+   - `priority`: from Severity × Priority matrix above — assess internally, do not add a Severity line to the description
+   - `assignee`: accountId from step 3
+   - `labels`: ["qa-bug"]
+   - `customFields`: `{"customfield_10020": <sprint_id>}` — sets the current sprint
 
-**Priority inference:**
-- User-facing data confusion / silent failure / feature fully broken → Major
-- Complete workflow blocked, no workaround → Critical
-- Data loss or security impact → Blocker
-- Cosmetic / minor UX → Minor
-
-3. Print summary:
+5. Print summary:
 ```
 Filed: [KEY] — [title]
 Priority: [P] | Assignee: [name]
-Portal: [portal] | Steps: [N] | Jira: [URL]/browse/[KEY]
+Sprint: [sprint name] | Label: qa-bug | Jira: [ATLASSIAN_BASE_URL]/browse/[KEY]
 ```
 
 ---
@@ -80,68 +121,132 @@ Portal: [portal] | Steps: [N] | Jira: [URL]/browse/[KEY]
 
 ### Filing Steps
 
-1. Call `jira_search_users` with `JIRA_USERNAME` from env — extract `accountId`.
-2. Call `jira_create_issue`:
-   - `project_key`: JIRA_PROJECT from env
-   - `issue_type`: "Bug"
+1. Call `list_agile_boards` — find the board for JIRA_PROJECT, extract board `id`.
+2. Call `list_sprints_for_board` with that board id and `state: active` — extract the sprint `id`.
+3. Call `get_jira_current_user` (no params) — extract `accountId`.
+4. Call `create_jira_issue`:
+   - `projectKey`: JIRA_PROJECT from env
+   - `issueType`: "Bug"
    - `summary`: `[Feature] Short description of what broke — where`
-   - `description`: full report using the Description Format below
-   - `priority`: output from `classify-severity`
-   - `assignee_account_id`: from step 1
-   - `labels`: ["qa-agent", "automated-finding"]
-3. Note the returned issue key.
-4. Call `jira_upload_attachment` for each artifact:
-   - `./qa-artifacts/screenshots/[filename]` — always required
-   - `./qa-artifacts/console-logs/[TC-id]-console.txt` — if captured
-   - `./qa-artifacts/network-logs/[TC-id]-network.json` — if captured
-5. Link back to Qase: mark test case FAILED, add Jira key as comment.
-6. Log to `./qa-artifacts/session-report.md`:
+   - `description`: full report using the Description Format below — no Severity line; severity is assessed internally only
+   - `priority`: from Severity × Priority matrix above
+   - `assignee`: accountId from step 3
+   - `labels`: ["qa-bug"]
+   - `customFields`: `{"customfield_10020": <sprint_id>}` — sets the current sprint
+5. Note the returned issue key.
+6. Save all artifacts (screenshot, console log, network log) to `./qa-artifacts/` with the issue key in the filename.
+7. Add a comment to the issue via `add_jira_comment` listing the artifact file paths (attachment upload not available in current MCP version).
+8. Link back to Qase: mark test case FAILED, add Jira key as comment.
+9. Log to `./qa-artifacts/session-report.md`:
    ```
-   - [KEY]: [title] — Priority: [P] — Artifacts: screenshot ✓ console ✓ network ✓
+   - [KEY]: [title] — Severity: [S] | Priority: [P] — Artifacts saved to qa-artifacts/
    ```
 
 ---
 
 ## Description Format
 
-Use this structure for both modes (WAY 2 omits Environment and Artifacts sections):
+**Always pass the description as a single ADF JSON object string.** Never use Markdown — asterisks (`*text*`, `**text**`) render as literal characters in Jira Cloud API v3 and do not produce bold or italic text.
 
+**WAY 2 descriptions must be short and natural** — like a human tester wrote them in 2 minutes. 3–5 steps max, one-line actual/expected, no Test Data section unless the user explicitly provided inputs. Omit Environment, Artifacts, and Related Test Case sections entirely.
+
+### Full ADF template (both modes)
+
+WAY 2 omits Environment, Artifacts, Related Test Case, and Test Data (unless specific inputs were given).
+
+```json
+{
+  "type": "doc",
+  "version": 1,
+  "content": [
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Precondition: ", "marks": [{"type": "strong"}, {"type": "textColor", "attrs": {"color": "#4C9AFF"}}]},
+        {"type": "text", "text": "[single line — or expand to bullet list if multiple conditions]"}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Steps To Reproduce:", "marks": [{"type": "strong"}, {"type": "textColor", "attrs": {"color": "#4C9AFF"}}]}
+      ]
+    },
+    {
+      "type": "orderedList",
+      "content": [
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "[step 1 — start from a URL, name every field and value]"}]}]},
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "[step 2]"}]}]},
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Observe the system response."}]}]}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Actual Result: ", "marks": [{"type": "strong"}, {"type": "textColor", "attrs": {"color": "#FF0000"}}]},
+        {"type": "text", "text": "[what actually happened — specific, one sentence]"}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Expected Result: ", "marks": [{"type": "strong"}, {"type": "textColor", "attrs": {"color": "#00875A"}}]},
+        {"type": "text", "text": "[what should have happened — one sentence]"}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Test Data: ", "marks": [{"type": "strong"}]},
+        {"type": "text", "text": "[URL] | [any specific values used]"}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Environment:", "marks": [{"type": "strong"}]}
+      ]
+    },
+    {
+      "type": "bulletList",
+      "content": [
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "URL: [exact URL tested]"}]}]},
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Browser: Chromium / Firefox"}]}]},
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Date: [ISO 8601]"}]}]},
+        {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Test Account: [placeholder — never real user data]"}]}]}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Artifacts: ", "marks": [{"type": "strong"}]},
+        {"type": "text", "text": "screenshot attached | console log attached | network log attached"}
+      ]
+    },
+    {"type": "rule"},
+    {
+      "type": "paragraph",
+      "content": [
+        {"type": "text", "text": "Related Test Case: ", "marks": [{"type": "strong"}]},
+        {"type": "text", "text": "Qase TC-[id]"}
+      ]
+    }
+  ]
+}
 ```
-**Precondition:** [single line — or bullet list if multiple]
 
----
-
-**Steps To Reproduce:**
-1. [Exact action from a specific URL]
-2. [Next action — name every field, button, value]
-3. ...
-N. Observe the system response.
-
----
-
-**Actual Result:** [What actually happened — specific, one sentence]
-
----
-
-**Expected Result:** [What should have happened — one sentence]
-
----
-
-**Test Data:** [URL] | [any specific values used]
-
-[WAY 1 only — Environment:]
-**Environment:**
-- URL: [exact URL tested]
-- Browser: Chromium / Firefox
-- Date: [ISO 8601]
-- Test Account: [placeholder — never real user data]
-
-[WAY 1 only — Artifacts:]
-**Artifacts:** screenshot attached | console log attached | network log attached
-
-[WAY 1 only:]
-**Related Test Case:** Qase TC-[id]
-```
+**Color rules:**
+- `Precondition:` label → blue `#4C9AFF`
+- `Steps To Reproduce:` label → blue `#4C9AFF`
+- `Actual Result:` label → red `#FF0000`
+- `Expected Result:` label → green `#00875A`
+- All other labels (`Test Data:`, `Severity:`, `Environment:`, `Artifacts:`) → `strong` only, no color
 
 ---
 
@@ -158,10 +263,14 @@ N. Observe the system response.
 
 ## Common Mistakes — Never Do These
 
-❌ `issue_type: "Task"` — always `"Bug"`
-❌ Skipping `assignee_account_id`
-❌ Writing file paths in description instead of calling `jira_upload_attachment`
+❌ `issueType: "Task"` — always `"Bug"`
+❌ Skipping `assignee` — always call `get_jira_current_user` first
+❌ Skipping sprint — always call `list_agile_boards` + `list_sprints_for_board` and set `customfield_10020`
+❌ Skipping `labels: ["qa-bug"]` — always include
+❌ Using old field names: `project_key`, `issue_type`, `assignee_account_id` — use `projectKey`, `issueType`, `assignee`
 ❌ Filing WAY 1 bug before screenshot is captured
 ❌ Vague steps: "Fill in the form" — name every field explicitly
 ❌ Speculation: "This is probably a race condition"
 ❌ Bundling multiple bugs in one report
+❌ Over-inflating priority — apply the Severity × Priority matrix; default is Medium
+❌ Putting severity in the description — assess it internally to derive priority, never expose it as a description line

@@ -1,0 +1,11 @@
+{
+  "name": "qa-agent",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@playwright/mcp": "latest",
+    "@qase/mcp-server": "latest",
+    "jsdom": "^29.1.1",
+    "mcp-atlassian": "latest"
+  }
+}
