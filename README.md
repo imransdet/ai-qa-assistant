@@ -122,7 +122,7 @@ cp -r knowledge-base/_TEMPLATE knowledge-base/MYPROJECT
 | Claude Sonnet (Anthropic) | LLM brain — reasoning, test generation, bug analysis | Included with Claude Pro |
 | [Playwright MCP](https://github.com/microsoft/playwright-mcp) | Browser automation, screenshots, logs | Free |
 | [Qase MCP](https://github.com/qase-tms/qase-mcp-server) | Upload test cases, manage runs, mark results | Free tier available |
-| [mcp-atlassian](https://github.com/sooperset/mcp-atlassian) | File Jira issues, create tickets | Free |
+| [mcp-atlassian](https://github.com/Vijay-Duke/mcp-atlassian) | File Jira issues, create tickets | Free |
 
 **Estimated total: ~$20/month** (Claude Pro covers everything)
 
@@ -188,13 +188,21 @@ git clone https://github.com/your-username/qa-agent.git
 cd qa-agent
 ```
 
-### 3. Install Playwright browser
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+This installs all three MCP servers locally (`@playwright/mcp`, `@qase/mcp-server`, `mcp-atlassian`). The `.mcp.json` config runs them from `node_modules/` — no global installs or `npx` needed.
+
+### 4. Install Playwright browser
 
 ```bash
 npx playwright install chromium
 ```
 
-### 4. Get your API tokens
+### 5. Get your API tokens
 
 | Service | Where to get it |
 |---------|----------------|
@@ -206,7 +214,7 @@ You also need:
 - Your **Jira project key** (e.g. `SCRUM`)
 - Your **Qase project code** (e.g. `DEMO`)
 
-### 5. Create your config files
+### 6. Create your config files
 
 **`.mcp.json`** — create this file in the project root:
 
@@ -215,28 +223,30 @@ You also need:
   "mcpServers": {
     "playwright": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--headless"]
+      "command": "node",
+      "args": ["node_modules/@playwright/mcp/cli.js", "--headless"]
     },
     "qase": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@qase/mcp-server"],
+      "command": "node",
+      "args": ["node_modules/@qase/mcp-server/build/index.js"],
       "env": { "QASE_API_TOKEN": "your_qase_token" }
     },
     "jira": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "mcp-atlassian"],
+      "command": "node",
+      "args": ["node_modules/mcp-atlassian/dist/index.js"],
       "env": {
-        "JIRA_URL": "https://yourcompany.atlassian.net",
-        "JIRA_USERNAME": "your@email.com",
-        "JIRA_API_TOKEN": "your_jira_token"
+        "ATLASSIAN_BASE_URL": "https://yourcompany.atlassian.net",
+        "ATLASSIAN_EMAIL": "your@email.com",
+        "ATLASSIAN_API_TOKEN": "your_jira_api_token"
       }
     }
   }
 }
 ```
+
+> **Note:** This project uses [Vijay-Duke/mcp-atlassian](https://github.com/Vijay-Duke/mcp-atlassian) (Node.js, npm). The env vars are `ATLASSIAN_BASE_URL`, `ATLASSIAN_EMAIL`, and `ATLASSIAN_API_TOKEN` — not the `JIRA_URL` / `JIRA_USERNAME` / `JIRA_API_TOKEN` keys used by the unrelated [sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian) Python library.
 
 **`.claude/settings.json`** — create this file:
 
@@ -249,11 +259,8 @@ You also need:
     "allow": ["Bash(*)", "Read(*)", "Write(*)", "Edit(*)", "mcp__playwright__*", "mcp__qase__*", "mcp__jira__*"]
   },
   "env": {
-    "JIRA_URL": "https://yourcompany.atlassian.net",
-    "JIRA_USERNAME": "your@email.com",
-    "JIRA_API_TOKEN": "your_jira_token",
+    "ATLASSIAN_BASE_URL": "https://yourcompany.atlassian.net",
     "JIRA_PROJECT": "SCRUM",
-    "QASE_API_TOKEN": "your_qase_token",
     "QASE_PROJECT": "DEMO",
     "SCREENSHOT_DIR": "./qa-artifacts/screenshots",
     "LOG_DIR": "./qa-artifacts/logs"
@@ -261,21 +268,21 @@ You also need:
 }
 ```
 
-> **Why two files?** `.mcp.json` is read by the MCP server processes at startup. `settings.json` passes the same values to Claude Code as environment variables. Both need the same credentials.
+> **Why two files?** `.mcp.json` holds the full Atlassian and Qase credentials — these are read by the MCP server processes at startup. `settings.json` exposes only the non-secret env vars Claude needs at runtime (`JIRA_PROJECT`, `QASE_PROJECT`, `ATLASSIAN_BASE_URL` for link generation). Keep API tokens in `.mcp.json` only.
 
-### 6. Create artifact directories
+### 7. Create artifact directories
 
 ```bash
 mkdir -p qa-artifacts/screenshots qa-artifacts/console-logs qa-artifacts/network-logs qa-artifacts/logs
 ```
 
-### 7. Open in VS Code
+### 8. Open in VS Code
 
 ```bash
 code .
 ```
 
-### 8. Verify MCP servers
+### 9. Verify MCP servers
 
 Type `/mcp` in the Claude Code panel to confirm all three servers show as connected:
 - `playwright` — browser automation
@@ -432,7 +439,7 @@ Each skill is a specialist instruction file in `.claude/agents/` that gives the 
 
 | Problem | Fix |
 |---------|-----|
-| Jira MCP 401 error | Check `JIRA_URL`, `JIRA_USERNAME`, `JIRA_API_TOKEN` in `.mcp.json` and `settings.json` |
+| Jira MCP 401 error | Check `ATLASSIAN_BASE_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` in `.mcp.json` |
 | Qase MCP auth fails | Regenerate token in Qase → Settings → API Tokens |
 | Agent goes off-task | Ensure `CLAUDE.md` is in the project root; reload VS Code window |
 | Screenshots not saved | Check `qa-artifacts/screenshots/` exists and is writable |
