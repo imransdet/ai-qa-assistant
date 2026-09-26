@@ -1,6 +1,6 @@
 # Senior QA Engineer Agent
 
-An autonomous QA agent that runs inside VS Code. Give it a staging URL and your requirements — in any form: plain-text description, a Jira ticket, acceptance criteria, a PRD, or a Figma link — and it writes test cases, executes them in a real browser, finds bugs, files detailed Jira issues, and creates your QA sprint tickets, all without you lifting a finger. Every test case it writes is saved to Qase.
+An autonomous QA agent that runs inside VS Code. Give it a staging URL and your requirements — in any form: plain-text description, a Jira ticket, acceptance criteria, a PRD, a Figma link, or a screenshot — and it writes test cases, executes them in a real browser, finds bugs, files detailed Jira issues, and creates your QA sprint tickets, all without you lifting a finger. Every test case it writes is saved to Qase.
 
 > Built with Claude Code · Playwright MCP · Qase · Jira
 
@@ -87,28 +87,39 @@ flowchart TD
 
 By default an AI test agent starts every session cold — it only knows the requirements and staging URL you give it. The `knowledge-base/` folder fixes that. It's persistent product memory the agent loads automatically before analyzing requirements (WAY 1, 3, 4), keyed by your **Qase project code** (`QASE_PROJECT` in settings).
 
+### Per-feature file structure
+
+Knowledge files are named `<feature>-<type>.md` and live flat in the product folder. Each feature gets its own set of files — there is no single shared file per type:
+
 ```
 knowledge-base/
-├── _TEMPLATE/     ← copy this to start a new product KB
-└── <QASE_PROJECT>/
-    ├── product-flows.md
-    ├── business-rules.md
-    ├── feature-map.md
-    └── known-defects.md
+├── _TEMPLATE/                          ← example files showing the naming convention
+│   ├── example-feature-business-rules.md
+│   ├── example-feature-feature-map.md
+│   ├── example-feature-known-defects.md
+│   └── example-feature-product-flows.md
+└── <QASE_PROJECT>/                     ← your product's KB (keyed by Qase project code)
+    ├── document-upload-business-rules.md
+    ├── document-upload-known-defects.md
+    ├── auth-product-flows.md
+    ├── auth-business-rules.md
+    └── ...
 ```
 
-Start a product KB:
+Create your first feature KB file:
 
 ```bash
-cp -r knowledge-base/_TEMPLATE knowledge-base/MYPROJECT
+mkdir -p knowledge-base/MYPROJECT
+cp knowledge-base/_TEMPLATE/example-feature-business-rules.md knowledge-base/MYPROJECT/my-feature-business-rules.md
+# rename and fill in your real rules
 ```
 
-| File | What it changes |
-|------|-----------------|
-| `product-flows.md` | Grounds happy-path tests in real navigation, not guesses |
-| `business-rules.md` | **Bug-vs-intended oracle** — a rule here outranks heuristic guesses |
-| `feature-map.md` | Adds regression-risk areas to every test scope |
-| `known-defects.md` | Probes weak spots harder; prevents duplicate bug reports |
+| File type | What it changes |
+|-----------|-----------------|
+| `<feature>-product-flows.md` | Grounds happy-path tests in real navigation, not guesses |
+| `<feature>-business-rules.md` | **Bug-vs-intended oracle** — a rule here outranks heuristic guesses |
+| `<feature>-feature-map.md` | Adds regression-risk areas to every test scope |
+| `<feature>-known-defects.md` | Probes weak spots harder; prevents duplicate bug reports |
 
 **It compounds.** At the end of every WAY 1 session the agent proposes KB updates — new confirmed defects, flows, rules learned. You can also just tell it a fact ("the upload limit is now 20 MB") and it files it into the right KB file. See [knowledge-base/GUIDE.md](knowledge-base/GUIDE.md) for the full format.
 
@@ -134,39 +145,45 @@ cp -r knowledge-base/_TEMPLATE knowledge-base/MYPROJECT
 qa-agent/
 ├── CLAUDE.md                          # Agent brain — full workflow + trigger keywords
 ├── README.md                          # This file
-├── knowledge-base/                    # Persistent product memory
+├── playwright.config.js               # Playwright test runner config
+├── tsconfig.json                      # TypeScript config (for scripts)
+├── package.json                       # MCP server dependencies + TypeScript dev deps
+├── knowledge-base/                    # Persistent product memory (per-feature files)
 │   ├── GUIDE.md                       # How the knowledge base works
-│   └── _TEMPLATE/                     # Copy to start a new product KB
-│       ├── product-flows.md
-│       ├── business-rules.md
-│       ├── feature-map.md
-│       └── known-defects.md
-├── scripts/                           # Utility scripts (gitignored — contain credentials)
-│   ├── create_retest_tickets.py
-│   └── link_and_backlog.py
+│   └── _TEMPLATE/                     # Example files — model your KB files on these
+│       ├── example-feature-business-rules.md
+│       ├── example-feature-feature-map.md
+│       ├── example-feature-known-defects.md
+│       └── example-feature-product-flows.md
+├── fixtures/
+│   └── test-files/                    # Ready-to-use valid & invalid files for upload tests
+│       ├── valid.pdf, valid.jpg, valid.docx, valid.xlsx …
+│       └── invalid.exe, invalid.zip, invalid.mp4 …
+├── scripts/
+│   └── lib/
+│       └── make-pdf.ts                # Utility: generate synthetic PDFs of a target size
 ├── .mcp.json                          # MCP server config with API tokens (gitignored)
 ├── .claude/
 │   ├── settings.json                  # Claude Code settings + env tokens (gitignored)
 │   └── agents/                        # 10 specialist skills
-│       ├── analyze-requirements/
-│       ├── parse-criteria/
-│       ├── write-test-cases/
-│       ├── generate-edge-cases/
-│       ├── execute-tests/
-│       ├── explore-app/
-│       ├── report-bug/
-│       ├── classify-severity/
-│       ├── review-test-cases/
-│       └── report-session/
+│       ├── requirements-analyzer/
+│       ├── acceptance-criteria-parser/
+│       ├── test-case-writer/
+│       ├── edge-case-generator/
+│       ├── playwright-navigator/
+│       ├── exploratory-tester/
+│       ├── issue-reporter/
+│       ├── severity-classifier/
+│       ├── test-case-reviewer/
+│       └── test-session-reporter/
 ├── qa-artifacts/                      # Created locally — gitignored
-│   ├── screenshots/
-│   ├── console-logs/
-│   ├── network-logs/
+│   ├── <QASE_PROJECT>/
+│   │   └── screenshots/
 │   └── logs/
 └── assets/                            # README images
 ```
 
-Files excluded from git: `.mcp.json`, `.claude/settings.json`, `scripts/`, `qa-artifacts/`
+Files excluded from git: `.mcp.json`, `.claude/settings.json`, `qa-artifacts/`
 
 ---
 
@@ -194,7 +211,7 @@ cd qa-agent
 npm install
 ```
 
-This installs all three MCP servers locally (`@playwright/mcp`, `@qase/mcp-server`, `mcp-atlassian`). The `.mcp.json` config runs them from `node_modules/` — no global installs or `npx` needed.
+This installs all three MCP servers locally (`@playwright/mcp`, `@qase/mcp-server`, `mcp-atlassian`) plus TypeScript tooling. The `.mcp.json` config runs MCP servers from `node_modules/` — no global installs or `npx` needed.
 
 ### 4. Install Playwright browser
 
@@ -262,7 +279,7 @@ You also need:
     "ATLASSIAN_BASE_URL": "https://yourcompany.atlassian.net",
     "JIRA_PROJECT": "SCRUM",
     "QASE_PROJECT": "DEMO",
-    "SCREENSHOT_DIR": "./qa-artifacts/screenshots",
+    "SCREENSHOT_DIR": "./qa-artifacts/DEMO/screenshots",
     "LOG_DIR": "./qa-artifacts/logs"
   }
 }
@@ -273,7 +290,7 @@ You also need:
 ### 7. Create artifact directories
 
 ```bash
-mkdir -p qa-artifacts/screenshots qa-artifacts/console-logs qa-artifacts/network-logs qa-artifacts/logs
+mkdir -p qa-artifacts/screenshots qa-artifacts/logs
 ```
 
 ### 8. Open in VS Code
@@ -339,7 +356,7 @@ App: https://staging.myapp.com/upload
 
 Optional params: `App:` (UI-aware step wording) · `Figma:` (design reference)
 
-**Produces:** Qase test cases organized into suites · Summary in `qa-artifacts/`
+**Produces:** Qase test cases organised into suites · Summary printed to terminal
 
 ---
 
@@ -353,7 +370,7 @@ Jira: PROJ-42
 
 **Fixes per test case:** Title format · Severity & Priority · Type → Regression · Layer → E2E · Behavior · Precondition · Steps · Expected Results · Test Data · Grammar
 
-**Produces:** Updated Qase test cases · New cases for gaps · Review report in `qa-artifacts/`
+**Produces:** Updated Qase test cases · New cases for gaps · Review report printed to terminal
 
 ---
 
@@ -407,25 +424,44 @@ Each skill is a specialist instruction file in `.claude/agents/` that gives the 
 
 | Skill | Used In | What It Does |
 |-------|---------|-------------|
-| `analyze-requirements` | WAY 1, 3, 4 | Breaks specs into happy paths, edge cases, security scenarios |
-| `parse-criteria` | WAY 1, 3 | Converts BDD / user-story criteria into pass/fail conditions |
-| `write-test-cases` | WAY 1, 3 | Generates Qase test cases with steps, preconditions, expected results |
-| `generate-edge-cases` | WAY 1, 3 | Adds boundary values, injection payloads, encoding attacks |
-| `execute-tests` | WAY 1, 4 | Executes tests in browser, manages waits, captures failures |
-| `explore-app` | WAY 1 | Structured exploratory testing with heuristics and attack patterns |
-| `report-bug` | WAY 1, 2 | Files Jira bug reports — WAY 1 with evidence, WAY 2 from shorthand input |
-| `classify-severity` | WAY 1 | Severity × priority matrix with auto-escalation for security bugs |
-| `review-test-cases` | WAY 4 | Audits Qase suite — fix every field, grammar, gaps; create missing cases |
-| `report-session` | WAY 1 | Closes session, updates Qase results, generates stakeholder report |
+| `requirements-analyzer` | WAY 1, 3, 4 | Breaks specs into happy paths, edge cases, security scenarios |
+| `acceptance-criteria-parser` | WAY 1, 3 | Converts BDD / user-story criteria into pass/fail conditions |
+| `test-case-writer` | WAY 1, 3 | Generates Qase test cases with steps, preconditions, expected results |
+| `edge-case-generator` | WAY 1, 3 | Adds boundary values, injection payloads, encoding attacks |
+| `playwright-navigator` | WAY 1, 4 | Executes tests in browser, manages waits, captures failures |
+| `exploratory-tester` | WAY 1 | Structured exploratory testing with heuristics and attack patterns |
+| `issue-reporter` | WAY 1, 2 | Files Jira bug reports — WAY 1 with evidence, WAY 2 from shorthand input |
+| `severity-classifier` | WAY 1 | Severity × priority matrix with auto-escalation for security bugs |
+| `test-case-reviewer` | WAY 4 | Audits Qase suite — fix every field, grammar, gaps; create missing cases |
+| `test-session-reporter` | WAY 1 | Closes session, updates Qase results, generates stakeholder report |
+
+---
+
+## Fixtures
+
+`fixtures/test-files/` contains ready-to-use files for upload and file-type boundary tests — no need to source them yourself:
+
+| File | Use |
+|------|-----|
+| `valid.pdf`, `valid.jpg`, `valid.png`, `valid.jpeg` | Image and document happy paths |
+| `valid.docx`, `valid.doc` | Word document upload tests |
+| `valid.xlsx`, `valid.xls`, `valid.csv` | Spreadsheet upload tests |
+| `invalid.exe`, `invalid.zip`, `invalid.mp4`, `invalid.svg`, `invalid.html`, `invalid.txt` | Rejected file type tests |
+
+The agent references these automatically when executing file upload test cases via Playwright.
+
+`scripts/lib/make-pdf.ts` generates a synthetic PDF of any target size — useful for boundary tests (e.g. exactly at the 10 MB limit).
 
 ---
 
 ## Roadmap
 
 ### Shipped
-- ✅ **Persistent, per-product Knowledge Base** — product flows, business rules, feature map, known defects — auto-loaded by `QASE_PROJECT`
+- ✅ **Persistent, per-feature Knowledge Base** — product flows, business rules, feature map, known defects — per-feature files auto-loaded by `QASE_PROJECT`
 - ✅ **Compounding knowledge** — agent proposes KB updates at end of each WAY 1 session and learns facts on demand
 - ✅ **Bug confidence tiers** — `Confirmed` (violates a documented business rule) vs `Suspected` (heuristic only)
+- ✅ **Test fixtures** — ready-to-use valid/invalid files for upload boundary testing
+- ✅ **TypeScript scripting** — `scripts/lib/` utilities for generating test data programmatically
 
 ### Planned
 1. **Bug approval gate** — auto-file only `Confirmed` defects; hold `Suspected` ones for sign-off
@@ -442,7 +478,7 @@ Each skill is a specialist instruction file in `.claude/agents/` that gives the 
 | Jira MCP 401 error | Check `ATLASSIAN_BASE_URL`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN` in `.mcp.json` |
 | Qase MCP auth fails | Regenerate token in Qase → Settings → API Tokens |
 | Agent goes off-task | Ensure `CLAUDE.md` is in the project root; reload VS Code window |
-| Screenshots not saved | Check `qa-artifacts/screenshots/` exists and is writable |
+| Screenshots not saved | Check `qa-artifacts/<QASE_PROJECT>/screenshots/` exists and is writable |
 | MCP server not connecting | Type `/mcp` in Claude Code panel to verify server status |
 
 ---

@@ -1,5 +1,5 @@
 ---
-name: review-test-cases
+name: test-case-reviewer
 description: Reviews and improves existing Qase test cases against requirements. Checks Title, Severity, Priority, Type (Regression), Layer (E2E), Behavior (Positive/Negative), Precondition, Steps, and grammar/spelling. Creates new test cases for any missing scenarios. Use this skill when the user says "review it" and provides a Qase suite link and requirements source (app URL or Jira ticket).
 ---
 
@@ -511,8 +511,6 @@ Date: [YYYY-MM-DD]
 ```
 
 **Summary language rule:** Never use raw API enum numbers in summary text. Always use the readable label — `Type: Regression` not `type=3`, `Layer: E2E` not `layer=1`, `Behavior: Positive` not `behavior=2`, `Severity: Major` not `severity=3`, `Priority: High` not `priority=1`. Summaries are read by team members who have no knowledge of this agent or API enum values.
-
-Save to: `./qa-artifacts/review-[YYYY-MM-DD-HH-MM].md`
 
 ---
 

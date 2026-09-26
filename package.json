@@ -1,11 +1,19 @@
 {
   "name": "qa-agent",
   "version": "1.0.0",
+  "description": "An autonomous QA agent that runs inside VS Code. Give it a staging URL and your requirements — in any form: plain-text description, a Jira ticket, acceptance criteria, a PRD, a Figma or design link, or a screenshot — and it writes test cases, executes them in a real browser, finds bugs, files detailed Jira issues, and even creates your QA sprint tickets, all without you lifting a finger. It also saves every test case it writes to your test management tool (Qase).",
+  "main": "index.js",
   "private": true,
   "dependencies": {
     "@playwright/mcp": "latest",
     "@qase/mcp-server": "latest",
     "jsdom": "^29.1.1",
     "mcp-atlassian": "latest"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
   }
 }

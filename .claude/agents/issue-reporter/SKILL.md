@@ -1,5 +1,5 @@
 ---
-name: report-bug
+name: issue-reporter
 description: Files Jira bug reports in two modes — WAY 1 (automated: evidence-based report from test execution failures, with screenshots and logs attached) and WAY 2 (manual: parses user shorthand input and formats it into a professional Jira bug report instantly). Trigger for WAY 1 when execute-tests or explore-app finds a failure. Trigger for WAY 2 when the user says "report it", "log this", "raise this", "create a bug", or "file this issue". Never file without an Actual Result and Expected Result. Every report must be reproducible by a developer who was not present.
 ---
 

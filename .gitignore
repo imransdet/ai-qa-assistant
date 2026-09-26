@@ -13,8 +13,10 @@
 # Google service account private key
 credentials/
 
-# Utility scripts with hardcoded credentials — for local use only
-scripts/
+# Product-specific automation scripts (may contain credentials via .env)
+scripts/*
+# Generic utilities with no credentials — tracked
+!scripts/lib/
 
 # ─── Runtime & generated ──────────────────────────────────────
 # Playwright MCP session logs

@@ -1,5 +1,5 @@
 ---
-name: execute-tests
+name: playwright-navigator
 description: Expert guidance for executing test cases systematically using the Playwright MCP server — covering navigation strategy, element interaction, waiting correctly, capturing artifacts (screenshots, network logs, console logs, traces), handling flaky behavior, and knowing when a test has truly passed or failed. Use this skill whenever the agent is about to browse and test an application via Playwright MCP. Trigger when the user says "start testing", "run the tests", "test the app", "open the browser", or when the test execution phase begins after test cases have been uploaded to Qase. This skill prevents shallow testing and ensures every failure is fully documented.
 ---
 
@@ -15,18 +15,7 @@ You are a Senior QA Engineer executing manual test cases via Playwright MCP. You
 2. Clear cookies and local storage before the first test
 3. Open browser console (captured automatically by Playwright MCP)
 4. Enable network interception to capture API calls
-5. Create ./qa-artifacts/screenshots/ and ./qa-artifacts/logs/ directories
-6. Note the browser and viewport size being used (log it)
-```
-
-### Artifact Directory Structure
-```
-qa-artifacts/
-├── screenshots/          PNG screenshots (timestamped)
-├── network-logs/         JSON of HTTP requests/responses
-├── console-logs/         Browser console output
-├── traces/               Playwright trace ZIPs
-└── session-report.md     Running log of findings
+5. Note the browser and viewport size being used (log it)
 ```
 
 ## Test Execution Protocol
@@ -105,25 +94,24 @@ When a test fails, capture ALL of the following before moving to the next test:
 ```
 Take screenshot immediately — before the state changes
 Filename: FAIL-TC{id}-{feature}-{timestamp}.png
-Store in: ./qa-artifacts/screenshots/
+Store in: ./qa-artifacts/$QASE_PROJECT/screenshots/
 ```
 
 ### 2. Console Log
 ```
 Read browser console messages
 Filter for: console.error, console.warn, uncaught exceptions
-Save to: ./qa-artifacts/console-logs/TC{id}-console.txt
+Include key errors in the failure summary below
 ```
 
 ### 3. Network Log
 ```
 Capture all HTTP requests made during the test
 Focus on: failed requests (4xx, 5xx), unexpected responses
-Save to: ./qa-artifacts/network-logs/TC{id}-network.json
-Include: URL, method, status code, response body (truncated to 500 chars)
+Include key failures in the failure summary below
 ```
 
-### 4. Failure Summary (for bug-reporter skill)
+### 4. Failure Summary (for issue-reporter skill)
 Document immediately:
 ```
 Test Case: TC-{id} — {title}
@@ -143,36 +131,13 @@ While executing scripted test cases, note (but don't stop to file) any:
 - Confusing UX (unclear labels, missing feedback)
 - Unexpected behavior that's NOT a scripted test failure
 
-Collect these and pass to `exploratory-tester` or `bug-reporter` after the scripted run.
+Collect these and pass to `exploratory-tester` or `issue-reporter` after the scripted run.
 
 ## Test Execution Pacing
 
 Do not rush. Between test cases:
-1. Update the running session log in ./qa-artifacts/session-report.md
-2. Mark the test result in Qase (pass/fail/blocked) immediately — don't batch at the end
-3. If 3+ consecutive failures happen, STOP and notify the user — the environment may be broken
-
-## Result Logging (running)
-
-Maintain ./qa-artifacts/session-report.md throughout the session:
-
-```markdown
-# Test Session: [Feature] — [Date]
-Environment: [staging URL]
-Browser: Chromium [version]
-Started: [time]
-
-## Results
-
-| TC | Title | Result | Notes |
-|----|-------|--------|-------|
-| TC-001 | Register happy path | ✅ PASS | |
-| TC-002 | Register duplicate email | ❌ FAIL | Error message not shown — BUG-001 |
-| TC-003 | Register invalid email | ⚠️ BLOCKED | Registration page unreachable |
-
-## Bugs Found
-- BUG-001: [TC-002] Duplicate email registration shows no error message
-```
+1. Mark the test result in Qase (pass/fail/blocked) immediately — don't batch at the end
+2. If 3+ consecutive failures happen, STOP and notify the user — the environment may be broken
 
 ## When to Stop Testing
 

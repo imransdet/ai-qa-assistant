@@ -1,5 +1,5 @@
 ---
-name: report-session
+name: test-session-reporter
 description: Generates a complete, professional test session summary report, updates all test results in Qase (marking each case as passed/failed/blocked), links failed cases to their Jira issue IDs, closes the test run, and produces a human-readable session report for stakeholders. Use this skill at the END of every QA session — after all test cases have been executed and all bugs have been filed. Trigger when the user says "wrap up the session", "finish testing", "generate the report", "update Qase results", "close the test run", "summarize findings", or "session done". This skill is what turns raw testing into a documented, traceable QA record.
 ---
 
@@ -21,14 +21,14 @@ Before generating the report, verify:
 
 ## Grow the Knowledge Base (Step 0.6)
 
-Before finishing, compound the active product's memory in `knowledge-base/<QASE_PROJECT>/` so the next session starts smarter. Only record facts this session actually established — never invent.
+Before finishing, compound the active product's memory in `knowledge-base/<QASE_PROJECT>/`. Files are per-feature and flat: `<feature>-<type>.md` (e.g. `credit-score-known-defects.md`). Only record facts this session actually established — never invent.
 
-- **New confirmed defect** → append a row to `known-defects.md`: `Ref` = the Jira key filed, `Area` (cite FEAT-xx/FLOW-xx), `Symptom`, `Status` = Open, `Note for agent`.
-- **New flow exercised** not already documented → add it to `product-flows.md`.
-- **New business rule** learned from the ticket or observed enforcement → add a `BR-xx` row to `business-rules.md`.
-- **New dependency / external service** discovered → update `feature-map.md`.
+- **New confirmed defect** → append a row to `<feature>-known-defects.md`: `Ref` = Jira key, `Area`, `Symptom`, `Status` = Open, `Note for agent`. Create the file if it doesn't exist yet.
+- **New flow exercised** → add it to `<feature>-product-flows.md`.
+- **New business rule** → add a `BR-xx` row to `<feature>-business-rules.md`. Keep `BR-xx` numbering globally unique across all features.
+- **New dependency discovered** → update `<feature>-feature-map.md`.
 
-Write the files directly (profiles run in `bypassPermissions`), then list every knowledge-base addition in the session report under a "Knowledge Base Updates" heading. If no product KB folder exists yet, suggest creating one with `cp -r knowledge-base/_TEMPLATE knowledge-base/<QASE_PROJECT>`.
+Write the files directly, then list every KB addition in the session report under a "Knowledge Base Updates" heading. Model new files on `knowledge-base/_TEMPLATE/example-feature-*.md`. If no product KB folder exists yet, suggest: `mkdir -p knowledge-base/<QASE_PROJECT>`.
 
 ## Qase Result Update Protocol
 
@@ -45,9 +45,7 @@ Close the Qase test run after all results are updated.
 
 ## Session Report Structure
 
-Generate this report as both:
-1. A markdown file at `./qa-artifacts/session-report-[date].md`
-2. A summary printed to the terminal for the user
+Print this report to the terminal for the user:
 
 ```markdown
 # QA Test Session Report
@@ -157,15 +155,6 @@ List explicitly — this protects you:
 - BUG-003 (Minor) is accepted as known issue and tracked
 
 ---
-
-## Artifacts
-
-All artifacts available in `./qa-artifacts/`:
-- Screenshots: [N files]
-- Console logs: [N files]
-- Network logs: [N files]
-- Playwright traces: [N files]
-- This report: session-report-[date].md
 
 ---
 
